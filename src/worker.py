@@ -2,7 +2,6 @@ from js import Response, Headers
 import urllib.parse
 import re
 
-# Standard HTML template using native video.js
 PLAYER_HTML = """
 <!DOCTYPE html>
 <html>
@@ -25,27 +24,23 @@ PLAYER_HTML = """
 </html>
 """
 
-async def on_fetch(request, env, ctx):
-    # Native parsing of the request URL string
+async def main_router(request):
     url_obj = urllib.parse.urlparse(request.url)
     path = url_obj.path
     query_params = urllib.parse.parse_qs(url_obj.query)
     current_host = f"{url_obj.scheme}://{url_obj.netloc}"
 
-    # Route 1: Watch Page Engine (/watch/video_id)
     if path.startswith("/watch/"):
         video_id = path.split("/")[-1]
         dm_metadata_url = f"https://www.dailymotion.com/player/metadata/video/{video_id}"
         
-        # Use native Javascript fetch engine inside Python worker
         from js import fetch as js_fetch
         try:
             resp = await js_fetch(dm_metadata_url)
             if resp.status != 200:
-                return Response.new("<h1>Video source tracking failed or blocked</h1>", headers={"Content-Type": "text/html"})
+                return Response.new("<h1>Video source tracking failed</h1>", headers={"Content-Type": "text/html"})
             
             data = await resp.json()
-            # Convert Javascript map object to standard Python dictionary
             qualities = data.to_py().get("qualities", {})
         except Exception:
             return Response.new("<h1>Metadata parsing failed</h1>", headers={"Content-Type": "text/html"})
@@ -57,12 +52,11 @@ async def on_fetch(request, env, ctx):
                 break
                 
         if not stream_url:
-            return Response.new("<h1>Could not extract streaming track profiles</h1>", headers={"Content-Type": "text/html"})
+            return Response.new("<h1>Could not extract stream profiles</h1>", headers={"Content-Type": "text/html"})
 
         encoded_stream = urllib.parse.quote_plus(stream_url)
         return Response.new(PLAYER_HTML.format(stream_url=encoded_stream), headers={"Content-Type": "text/html"})
 
-    # Route 2: Live Manifest Parser (/manifest?url=...)
     elif path == "/manifest":
         url_param = query_params.get("url")
         if not url_param:
@@ -104,17 +98,16 @@ async def on_fetch(request, env, ctx):
         res_headers = Headers.new({"Content-Type": "application/vnd.apple.mpegurl", "Access-Control-Allow-Origin": "*"})
         return Response.new("\n".join(rewritten_lines), headers=res_headers)
 
-    # Route 3: The 302 Redirect Hack Engine (/segment?url=...)
     elif path == "/segment":
         url_param = query_params.get("url")
         if not url_param:
-            return Response.new("Missing video segment parameter", status=400)
-            
+            return Response.new("Missing segment parameter", status=400)
         raw_ts_url = urllib.parse.unquote(url_param[0])
-        
-        # Native 302 redirect object definition
         redirect_headers = Headers.new({"Location": raw_ts_url, "Access-Control-Allow-Origin": "*"})
         return Response.new("", status=302, headers=redirect_headers)
 
-    # Fallback layout index
     return Response.new("NebulaView Proxy Engine Operational", status=200)
+
+# Global entrypoint declaration
+async def on_fetch(request, env, ctx):
+    return await main_router(request)
