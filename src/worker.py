@@ -1,4 +1,4 @@
-from cloudflare import WorkerEntrypoint
+from js import Response as JSResponse
 from fastapi import FastAPI, Request
 from fastapi.responses import Response, StreamingResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -126,6 +126,6 @@ async def proxy_ts_segment(url: str):
     return StreamingResponse(stream_ts_data(), media_type=content_type)
 
 
-class Default(WorkerEntrypoint):
-    async def fetch(self, request):
-        return await asgi.fetch(app, request, self.env)
+# Core runtime export layout (Removes the need for 'WorkerEntrypoint' class)
+async def on_fetch(request, env, ctx):
+    return await asgi.fetch(app, request, env)
