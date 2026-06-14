@@ -1,6 +1,7 @@
-{
-  "name": "nebulaview-all-in-one",
-  "main": "src/worker.py",
-  "compatibility_date": "2026-06-14",
-  "compatibility_flags": ["python_workers"]
-}
+[project]
+name = "nebulaviewstreaming"
+version = "0.1.0"
+dependencies = [
+    "fastapi",
+    "httpx"
+]
