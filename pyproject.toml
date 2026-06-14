@@ -1,7 +1,8 @@
 [project]
-name = "nebulaview-all-in-one"
+name = "nebulaviewstreaming"
 version = "0.1.0"
 dependencies = [
     "fastapi",
-    "httpx"
+    "httpx",
+    "cloudflare"
 ]
