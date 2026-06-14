@@ -1,0 +1,7 @@
+[project]
+name = "nebulaview-all-in-one"
+version = "0.1.0"
+dependencies = [
+    "fastapi",
+    "httpx"
+]
