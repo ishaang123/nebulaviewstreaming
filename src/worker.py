@@ -1,4 +1,4 @@
-from workers import WorkerEntrypoint
+from cloudflare import WorkerEntrypoint
 from fastapi import FastAPI, Request
 from fastapi.responses import Response, StreamingResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# A simplified version of your HTML player layout
+# Your interactive video player interface layout template
 PLAYER_HTML = """
 <!DOCTYPE html>
 <html>
@@ -26,8 +26,8 @@ PLAYER_HTML = """
     <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
     <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
 </head>
-<body style="background:#111; color:#fff; text-align:center; font-family:sans-serif;">
-    <h2>NebulaView Single-Server Player</h2>
+<body style="background:#111; color:#fff; text-align:center; font-family:sans-serif; margin-top:50px;">
+    <h2>NebulaView Serverless Player Engine</h2>
     <div style="max-width: 800px; margin: 20px auto;">
         <video id="my-video" class="video-js vjs-default-skin vjs-16-9" controls preload="auto">
             <source src="/manifest?url={stream_url}" type="application/x-mpegURL">
@@ -40,26 +40,20 @@ PLAYER_HTML = """
 </html>
 """
 
-# ROUTE 1: The Main Web Page
 @app.get("/watch/{video_id}")
 async def watch_video(video_id: str, request: Request):
-    # Native lightweight extraction instead of yt_dlp
-    # Dailymotion provides a direct internal metadata URL for every video ID
     dm_metadata_url = f"https://www.dailymotion.com/player/metadata/video/{video_id}"
-    
     headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)"}
     
     async with httpx.AsyncClient() as client:
         resp = await client.get(dm_metadata_url, headers=headers)
         
     if resp.status_code != 200:
-        return HTMLResponse("content=","<h1>Video not found or blocked</h1>", status_code=404)
+        return HTMLResponse("<h1>Video source tracking failed or blocked</h1>", status_code=404)
     
-    # Extract the master .m3u8 link from Dailymotion's JSON response
     data = resp.json()
     qualities = data.get("qualities", {})
     
-    # Find the best available live streaming playlist link
     stream_url = None
     for q in ["auto", "1080", "720", "480", "360"]:
         if q in qualities:
@@ -67,17 +61,12 @@ async def watch_video(video_id: str, request: Request):
             break
             
     if not stream_url:
-        return HTMLResponse("<h1>Could not extract stream stream metadata</h1>", status_code=500)
+        return HTMLResponse("<h1>Could not extract streaming track profiles</h1>", status_code=500)
 
-    # Encode the URL so it passes cleanly into our proxy route
-    current_host = str(request.base_url).rstrip('/')
     encoded_stream = urllib.parse.quote_plus(stream_url)
-    
-    # Render your page template dynamically
-    final_html = PLAYER_HTML.format(stream_url=encoded_stream)
-    return HTMLResponse(content=final_html)
+    return HTMLResponse(content=PLAYER_HTML.format(stream_url=encoded_stream))
 
-# ROUTE 2: The Playlist Manifest Rewriter
+
 @app.get("/manifest")
 async def proxy_m3u8(url: str, request: Request):
     raw_m3u8_url = urllib.parse.unquote(url)
@@ -116,7 +105,7 @@ async def proxy_m3u8(url: str, request: Request):
 
     return Response(content="\n".join(rewritten_lines), media_type="application/vnd.apple.mpegurl")
 
-# ROUTE 3: The Video Segment Data Pipeline
+
 @app.get("/segment")
 async def proxy_ts_segment(url: str):
     raw_ts_url = urllib.parse.unquote(url)
@@ -136,7 +125,7 @@ async def proxy_ts_segment(url: str):
 
     return StreamingResponse(stream_ts_data(), media_type=content_type)
 
-# Mount application to Cloudflare Workers Core
+
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
         return await asgi.fetch(app, request, self.env)
