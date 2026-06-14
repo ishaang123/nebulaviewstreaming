@@ -1,7 +1,6 @@
-[project]
-name = "nebulaviewstreaming"
-version = "0.1.0"
-dependencies = [
-    "fastapi",
-    "httpx"
-]
+{
+  "name": "nebulaviewstreaming",
+  "main": "src/worker.py",
+  "compatibility_date": "2026-06-14",
+  "compatibility_flags": ["python_workers"]
+}
