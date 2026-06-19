@@ -1,0 +1,16 @@
+name: Force Hugging Face Factory Rebuild
+
+on:
+  schedule:
+    # This cron expression runs exactly every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # This lets you click a button in GitHub to test it manually
+
+jobs:
+  rebuild-space:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Hugging Face API for Factory Restart
+        run: |
+          curl -X POST "https://huggingface.co/api/spaces/YOUR_HF_USERNAME/YOUR_SPACE_NAME/restart?factory=true" \
+          -H "Authorization: Bearer ${{ secrets.HF_TOKEN }}"
