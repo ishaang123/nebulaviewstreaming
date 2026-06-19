@@ -13,4 +13,4 @@ jobs:
       - name: Call Hugging Face API for Factory Restart
         run: |
           curl -X POST "https://huggingface.co/api/spaces/ishaan2/nebulaviwstreaming/restart?factory=true" \
-          -H 'Authorization: Bearer '${{ secrets.HF_TOKEN }}
+          -H "Authorization: Bearer ${{ secrets.HF_SECRET }}"
