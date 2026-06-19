@@ -2,8 +2,8 @@ name: Force Hugging Face Factory Rebuild
 
 on:
   schedule:
-    # This cron expression runs exactly every 6 hours
-    - cron: '0 */6 * * *'
+    # This cron expression runs exactly every 5 hours
+    - cron: '0 */5 * * *'
   workflow_dispatch: # This lets you click a button in GitHub to test it manually
 
 jobs:
